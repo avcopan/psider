@@ -55,6 +55,20 @@ class Molecule(object):
       self.units  = "bohr"
       self.coordinates /= physconst.bohr2angstrom
 
+  def __iter__(self):
+    for label, xyz in zip(self.labels, self.coordinates):
+      yield label, xyz
+
+  def __str__(self):
+    ret = "units {:s}\n".format(self.units)
+    fmt = "{:2s} {: >15.10f} {: >15.10f} {: >15.10f}\n"
+    for label, coords in self:
+      ret += fmt.format(label, *coords)
+    return ret
+
+  def __repr__(self):
+    return str(self)
+
   def set_coordinates(self, coordinates, units = None):
     if units is None: units = self.units
     self.units = units

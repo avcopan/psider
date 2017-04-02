@@ -24,6 +24,7 @@ def spaced(*strings):
 def line(*strings):
   return '\s*' + spaced(*strings) + '\s*\n'
 
+
 character        = r'[a-zA-Z]'
 digits           = r'\d+'
 float_           = r'-?\d+\.\d+'
