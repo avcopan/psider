@@ -67,54 +67,6 @@ class XYZFinder(object):
     ret = (rehelper.float_).join(rehelper.capture(part) for part in parts)
     return ret
 
-  def iter_labels(self, string):
-    """Iterate over atom labels in a string
-
-    Args:
-      string: A string containing a block of more than two consecutive lines
-        that match self.regex.
-
-    Yields:
-      str: The next atomic symbol.
-    """
-    for match in re.finditer(self.get_label_regex(), string):
-      yield match.group(1)
-
-  def iter_coordinates(self, string):
-    """Iterate over coordinates in a string
-
-    Args:
-      string: A string containing a block of more than two consecutive lines
-        that match self.regex.
-
-    Yields:
-      list: The next set of three Cartesian coordinate values.
-    """
-    for match in re.finditer(self.get_coordinates_regex(), string):
-      yield [float(coord) for coord in match.groups()]
-
-  def replace_coordinates_with_placeholder(self, string, placeholder):
-    """Replace the coordinates in a string with a placeholder.
-
-    Args:
-      string: A string containing a block of more than two consecutive lines
-        that match self.regex.
-      placeholder: The string to replace the coordinates with.
-
-    Returns:
-      str: A copy of `string`, with coordinates replaced by `placeholder`.
-    """
-    regex = self.xyzline.get_coordinates_inverse_regex()
-    ret = ''
-    for line in string.splitlines():
-      line += '\n'
-      match = re.search(regex, line)
-      if not match:
-        ret += line
-      else:
-        ret += (placeholder).join(match.groups())
-    return ret
-
 
 class XYZString(object):
   """A container for a file containing cartesian coordinates.
@@ -157,7 +109,8 @@ class XYZString(object):
     Returns:
       tuple: A tuple of atomic labels.
     """
-    return tuple(self.xyzfinder.iter_labels(self.body))
+    regex = self.xyzfinder.get_label_regex()
+    return tuple(re.findall(regex, self.body))
 
   def extract_coordinates(self):
     """Extract coordinates from the coordinate block.
@@ -165,7 +118,9 @@ class XYZString(object):
     Returns:
       numpy.ndarray: A numpy array of coordinates.
     """
-    return np.array(list(self.xyzfinder.iter_coordinates(self.body)))
+    regex = self.xyzfinder.get_coordinates_regex()
+    coordinates = np.array(re.findall(regex, self.body))
+    return coordinates.astype(np.float)
 
   def replace_coordinates_with_placeholder(self, placeholder):
     """Replace coordinates in the coordinate block with a placeholder.
