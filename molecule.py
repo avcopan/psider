@@ -3,7 +3,7 @@ import numpy as np
 import re
 from . import atomdata
 from . import physconst
-from .xyzstr import UnitsFinder, XYZFinder, XYZString
+from .parse import UnitsFinder, XYZFinder, XYZString
 
 class Molecule(object):                                                          
   """A class to store information about a chemical system.                       

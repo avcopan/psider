@@ -1,4 +1,4 @@
-from psider.xyzstr import UnitsFinder, XYZFinder, XYZString
+from psider.parse import UnitsFinder, XYZFinder, XYZString
 import numpy as np
 
 

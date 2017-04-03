@@ -1,3 +1,5 @@
+"""Module for extracting information from a string.
+"""
 import re
 import numpy as np
 from . import rehelper
