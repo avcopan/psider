@@ -64,7 +64,7 @@ def test__with_bagel_input_string():
                                                                                  
     ]}                                                                               
   """
-  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *] *}},? *\n'
+  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
   xyzfinder = XYZFinder(xyzregex)
   xyzstring = XYZString(bagel_input_string, xyzfinder)
   assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
