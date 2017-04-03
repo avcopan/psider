@@ -27,8 +27,10 @@ class Options(object):
         atomic symbol and its associated coordinate values are in the string,
         and must end with a newline character, '\n'.  If the line contains
         brackets, they must be doubled (i.e. replace '{' with '{{').
-      energy_regex: Regex that finds the energy and returns a match object with
-        the energy as the only group
+      energy_regex: Regex for finding the energy in the output file.  Must
+        contain the placeholder @Energy and end in a newline character.
+        For example, " *Total *Energy *= *@Energy *\n", would fork for a simple
+        Psi4 Hartree-Fock output.
       success_regex: Regex that shows the program ran sucessfully
       correction_regexes: Regex for energy corrections
       program: Name of program to be run (specifically the name used by the

@@ -3,7 +3,7 @@ import numpy as np
 import re
 from . import atomdata
 from . import physconst
-from .parse import UnitsFinder, XYZFinder, XYZString
+from .parse import XYZString
 
 class Molecule(object):                                                          
   """A class to store information about a chemical system.                       
@@ -24,10 +24,7 @@ class Molecule(object):
 
   @classmethod
   def from_string(cls, mol_string):
-    print(mol_string)
-    unitsfinder = UnitsFinder()
-    xyzfinder = XYZFinder()
-    xyzstring = XYZString(mol_string, xyzfinder, unitsfinder)
+    xyzstring = XYZString(mol_string)
     units = xyzstring.extract_units()
     labels = xyzstring.extract_labels()
     coordinates = xyzstring.extract_coordinates()

@@ -4,93 +4,31 @@ import re
 import numpy as np
 from . import rehelper
 
-
-class UnitsFinder(object):
-  """Helper for processing line in a coordinate string indicating its units.
-
-  Attributes:
-    regex: Regex for finding the line that indicates the units ('bohr' or
-      'angstrom') of the molecular geometry.  Contains the placeholder
-      '@Units' at the position of the units in the string, and ends in ' *\n'.
-  """
-  def __init__(self, regex = ' *units +@Units *\n'):
-    self.regex = regex
-
-  def get_units_regex(self):
-    """Return capturing units line regex.
-    """
-    return re.sub('@Units', rehelper.capture(rehelper.word), self.regex)
-
-  def get_units(self, string):
-    match = re.search(self.get_units_regex(), string)
-    if not match:
-      raise Exception('No match found for this regex.')
-    return match.group(1).lower()
-
-
-class XYZFinder(object):
-  """Helper for processing coordinate-containing lines in a file string.
-
-  Attributes:
-    regex: Regex for finding a line containing Cartesian coordinates. Contains
-      the placeholders '@Atom', '@XCoord', '@YCoord', and '@ZCoord' at the
-      positions of the atomic symbol and its associated coordinate values in the
-      string. Always must end in ' *\n'.
-  """
-  def __init__(self, regex = ' *@Atom +@XCoord +@YCoord +@ZCoord *\n'):
-    self.regex = regex
-
-  def get_regex(self):
-    """Return non-capturing XYZ line regex.
-    """
-    ret = re.sub('@Atom', rehelper.atomic_symbol, self.regex)
-    ret = re.sub('@.Coord', rehelper.float_, ret)
-    return ret
-
-  def get_label_regex(self):
-    """Return XYZ line regex capturing the atom label.
-    """
-    ret = re.sub('@Atom', rehelper.capture(rehelper.atomic_symbol), self.regex)
-    ret = re.sub('@.Coord', rehelper.float_, ret)
-    return ret
-
-  def get_coordinates_regex(self):
-    """Return XYZ line regex capturing all of the coordinates.
-    """
-    ret = re.sub('@Atom', rehelper.atomic_symbol, self.regex)
-    ret = re.sub('@.Coord', rehelper.capture(rehelper.float_), ret)
-    return ret
-
-  def get_coordinates_inverse_regex(self):
-    """Return XYZ line regex capturing everything but the coordinates.
-    """
-    ret = re.sub('@Atom', rehelper.atomic_symbol, self.regex)
-    parts = re.sub('.Coord', '', ret).split('@')
-    ret = (rehelper.float_).join(rehelper.capture(part) for part in parts)
-    return ret
-
-
 class XYZString(object):
-  """A container for a file containing cartesian coordinates.
+  """A container for a string containing cartesian coordinates.
 
   A helper for parsing a coordinate-containing string.  Assumes the coordinates
   are contained in the last block of more than two consecutive lines matching
-  the given XYZFinder.
+  the given rehelper.XYZFinder.
 
   Attributes:
     string: A string containing a block of more than two consecutive lines that
       match xyzfinder.regex.
-    xyzfinder: An XYZFinder object.
-    unitsfinder: A UnitsFinder object.
+    xyzfinder: An rehelper.XYZFinder object.
+    unitsfinder: A rehelper.UnitsFinder object.
     regex: Regex for finding the Cartesian coordinates within the string.
   """
 
-  def __init__(self, string, xyzfinder, unitsfinder=None):
+  def __init__(self, string, xyzfinder = rehelper.XYZFinder(),
+                             unitsfinder = rehelper.UnitsFinder()):
     self.string = string.replace('{', '{{').replace('}', '}}')
     self.xyzfinder = xyzfinder
+    if not isinstance(self.xyzfinder, rehelper.XYZFinder):
+      raise Exception("The 'xyzfinder' argument must be an instance of the "
+                      "class rehelper.XYZFinder.")
     self.unitsfinder = unitsfinder
     self.regex = rehelper.two_or_more(xyzfinder.get_regex())
-    start, end = self.get_last_match().span()
+    start, end = self._get_last_match().span()
     self.head = self.string[:start]
     self.body = self.string[start:end]
     self.foot = self.string[end:]
@@ -101,9 +39,14 @@ class XYZString(object):
     Returns:
       str: A string indicating the units, 'bohr' or 'angstrom'.
     """
-    if self.unitsfinder is None:
-      raise Exception('This method requires the unitsfinder argument')
-    return self.unitsfinder.get_units(self.string)
+    if not isinstance(self.unitsfinder, rehelper.UnitsFinder):
+      raise Exception("This method requires the 'unitsfinder' attribute to be "
+                      "an instance of the class rehelper.UnitsFinder.")
+    regex = self.unitsfinder.get_units_regex()
+    match = re.search(regex, self.string)
+    if not match:
+      raise Exception("Couldn't find a match for the units regex.")
+    return match.group(1).lower()
 
   def extract_labels(self):
     """Extract the labels from the coordinate block.
@@ -144,7 +87,7 @@ class XYZString(object):
         body += (placeholder).join(match.groups())
     return ''.join([self.head, body, self.foot])
 
-  def get_last_match(self):
+  def _get_last_match(self):
     match = None
     for match in re.finditer(self.regex, self.string, re.MULTILINE):
       pass
@@ -152,6 +95,22 @@ class XYZString(object):
       raise Exception("No Cartesian coordinates found in this string.")
     return match
 
+
+def OutfileString(object):
+  """A container for the job output file string.
+
+  A helper for parsing a string containing the energy, and possibly also the
+  gradient.
+  """
+
+  def __init__(self, string, energyfinder, successfinder, gradientfinder=None):
+    self.string = self.string
+    self.energyfinder = energyfinder
+    if not isinstance(self.energyfinder, rehelper.EnergyFinder):
+      raise Exception("The 'energyfinder' argument must be an instance of the "
+                      "class rehelper.EnergyFinder.")
+    self.successfinder = successfinder
+    self.gradientfinder = gradientfinder
 
 
 if __name__ == "__main__":
@@ -181,7 +140,7 @@ if __name__ == "__main__":
   ]}
   """
   xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
-  xyzfinder = XYZFinder(xyzregex)
+  xyzfinder = rehelper.XYZFinder(xyzregex)
   xyzstring = XYZString(string, xyzfinder)
   # Make a molecule object from the coordinates contained in the template file.
   labels = xyzstring.extract_labels()

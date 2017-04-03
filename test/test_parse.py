@@ -1,4 +1,4 @@
-from psider.parse import UnitsFinder, XYZFinder, XYZString
+from psider.parse import XYZString
 import numpy as np
 
 
@@ -9,9 +9,7 @@ def test__with_mol_string():
     H  0.0000000000 -0.7490459967  0.5135472375
     H  0.0000000000  0.7490459967  0.5135472375
   """
-  unitsfinder = UnitsFinder()
-  xyzfinder = XYZFinder()
-  xyzstring = XYZString(mol_string, xyzfinder, unitsfinder)
+  xyzstring = XYZString(mol_string)
   assert(xyzstring.extract_units() == 'angstrom')
   assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
   assert(np.allclose(xyzstring.extract_coordinates(),
@@ -32,8 +30,7 @@ def test__with_psi_input_string():
     set basis sto-3g
     energy('scf')
   """
-  xyzfinder = XYZFinder()
-  xyzstring = XYZString(psi_input_string, xyzfinder)
+  xyzstring = XYZString(psi_input_string)
   assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
   assert(np.allclose(xyzstring.extract_coordinates(),
                     [[ 0.,  0.      , -0.06471629],
@@ -41,6 +38,8 @@ def test__with_psi_input_string():
                      [ 0.,  0.749046,  0.51354724]]))
 
 def test__with_bagel_input_string():
+  from psider.rehelper import XYZFinder
+
   bagel_input_string = """
   { "bagel" : [
 
@@ -73,6 +72,8 @@ def test__with_bagel_input_string():
                      [ 0.,  1.,  1.]]))
 
 def test__coordinate_replacement():
+  from psider.rehelper import XYZFinder
+
   bagel_input_string = """
   { "bagel" : [
 
