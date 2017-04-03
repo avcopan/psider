@@ -8,9 +8,9 @@ class UnitsFinder(object):
   Attributes:
     regex: Regex for finding the line that indicates the units ('bohr' or
       'angstrom') of the molecular geometry.  Contains the placeholder
-      '@Units' at the position of the units in the string, and ends in '\s*\n'.
+      '@Units' at the position of the units in the string, and ends in ' *\n'.
   """
-  def __init__(self, regex = '\s*units\s+@Units\s*\n'):
+  def __init__(self, regex = ' *units +@Units *\n'):
     self.regex = regex
 
   def get_units_regex(self):
@@ -31,9 +31,9 @@ class XYZFinder(object):
     regex: Regex for finding a line containing Cartesian coordinates. Contains
       the placeholders '@Atom', '@XCoord', '@YCoord', and '@ZCoord' at the
       positions of the atomic symbol and its associated coordinate values in the
-      string. Always must end in '\s*\n'.
+      string. Always must end in ' *\n'.
   """
-  def __init__(self, regex = '\s*@Atom\s+@XCoord\s+@YCoord\s+@ZCoord\s*\n'):
+  def __init__(self, regex = ' *@Atom +@XCoord +@YCoord +@ZCoord *\n'):
     self.regex = regex
 
   def get_regex(self):
@@ -93,9 +93,9 @@ class XYZString(object):
     self.unitsfinder = unitsfinder
     self.regex = rehelper.two_or_more(xyzfinder.get_regex())
     start, end = self.get_last_match().span()
-    self.head = string[:start]
-    self.body = string[start:end]
-    self.foot = string[:end]
+    self.head = self.string[:start]
+    self.body = self.string[start:end]
+    self.foot = self.string[:end]
 
   def extract_units(self):
     if self.unitsfinder is None:
@@ -109,8 +109,6 @@ class XYZString(object):
     return np.array(list(self.xyzfinder.iter_coords(self.body)))
 
   def get_last_match(self):
-    print(self.regex)
-    print(self.string)
     match = None
     for match in re.finditer(self.regex, self.string, re.MULTILINE):
       pass
@@ -124,16 +122,40 @@ if __name__ == "__main__":
   from .molecule import Molecule
   from .options import Options
   # Build some helper objects.
-  string = open('template.dat').read()
-  options = Options()
-  xyzfinder = XYZFinder(options.xyz_regex)
+  string = """
+{ "bagel" : [                                                                    
+                                                                                 
+{                                                                                
+    "title" : "molecule",                                                        
+    "symmetry" : "C1",                                                           
+    "basis" : "svp",                                                             
+    "df_basis" : "svp-jkfit",                                                    
+    "angstrom" : false,                                                          
+    "geometry" : [                                                               
+        {"atom" : "O",  "xyz" : [ 0.0000000000, 0.0000000000,-0.0000000000] },   
+        {"atom" : "H",  "xyz" : [ 0.0000,-0.0000000000, 1.0000000000] },         
+        {"atom" : "H",  "xyz" : [ 0.0000000000, 1.0000000000, 1.0000000000] }    
+    ]                                                                            
+},                                                                               
+                                                                                 
+{                                                                                
+    "title" : "hf"                                                               
+}                                                                                
+                                                                                 
+]}                                                                               
+
+"""
+  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *] *}},? *\n'
+  xyzfinder = XYZFinder(xyzregex)
   xyzstring = XYZString(string, xyzfinder)
   # Make a molecule object from the coordinates contained in the template file.
   labels = xyzstring.extract_labels()
   coords = xyzstring.extract_coordinates()
   mol = Molecule(labels, coords)
-  print(mol)
+  print(labels)
+  print(coords)
 
+  '''
   molstring = str(mol)
   xyzfinder = XYZFinder()
   unitsfinder = UnitsFinder()
@@ -141,3 +163,4 @@ if __name__ == "__main__":
   print(xyzstring.extract_units())
   print(xyzstring.extract_labels())
   print(xyzstring.extract_coordinates())
+  '''

@@ -40,3 +40,38 @@ def test__with_psi_input_string():
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
+
+def test__with_bagel_input_string():
+  bagel_input_string = """
+   { "bagel" : [                                                                    
+                                                                                 
+    {                                                                                
+        "title" : "molecule",                                                        
+        "symmetry" : "C1",                                                           
+        "basis" : "svp",                                                             
+        "df_basis" : "svp-jkfit",                                                    
+        "angstrom" : false,                                                          
+        "geometry" : [                                                               
+            {"atom" : "O",  "xyz" : [ 0.0000000000, 0.0000000000,-0.0000000000] },   
+            {"atom" : "H",  "xyz" : [ 0.0000,-0.0000000000, 1.0000000000] },         
+            {"atom" : "H",  "xyz" : [ 0.0000000000, 1.0000000000, 1.0000000000] }    
+        ]                                                                            
+    },                                                                               
+                                                                                 
+    {                                                                                
+        "title" : "hf"                                                               
+    }                                                                                
+                                                                                 
+    ]}                                                                               
+  """
+  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *] *}},? *\n'
+  xyzfinder = XYZFinder(xyzregex)
+  xyzstring = XYZString(bagel_input_string, xyzfinder)
+  assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(xyzstring.extract_coordinates(),
+                    [[ 0.,  0., -0.],
+                     [ 0., -0.,  1.],
+                     [ 0.,  1.,  1.]]))
+
+
+

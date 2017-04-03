@@ -1,7 +1,6 @@
 from psi4 import core
 import numpy as np
 import re
-from . import rehelper
 from . import atomdata
 from . import physconst
 from .xyzstr import UnitsFinder, XYZFinder, XYZString
@@ -77,6 +76,7 @@ class Molecule(object):
     mol = core.Molecule.create_molecule_from_string(str(self))
     mol.update_geometry()
     return mol
+
 
 
 if __name__ == "__main__":

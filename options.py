@@ -4,7 +4,7 @@ class Options(object):
 
   def __init__(self,
                template_file_path="template.dat",
-               xyz_regex="\s*@Atom\s+@XCoord\s+@YCoord\s+@ZCoord\n",
+               xyz_regex=" *@Atom +@XCoord +@YCoord +@ZCoord *\n",
                energy_regex="",
                success_regex="",
                correction_regexes=None,
