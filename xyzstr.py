@@ -202,28 +202,27 @@ if __name__ == "__main__":
   from .options import Options
   # Build some helper objects.
   string = """
-{ "bagel" : [                                                                    
-                                                                                 
-{                                                                                
-    "title" : "molecule",                                                        
-    "symmetry" : "C1",                                                           
-    "basis" : "svp",                                                             
-    "df_basis" : "svp-jkfit",                                                    
-    "angstrom" : false,                                                          
-    "geometry" : [                                                               
-        {"atom" : "O",  "xyz" : [ 0.0000000000, 0.0000000000,-0.0000000000] },   
-        {"atom" : "H",  "xyz" : [ 0.0000,-0.0000000000, 1.0000000000] },         
-        {"atom" : "H",  "xyz" : [ 0.0000000000, 1.0000000000, 1.0000000000] }    
-    ]                                                                            
-},                                                                               
-                                                                                 
-{                                                                                
-    "title" : "hf"                                                               
-}                                                                                
-                                                                                 
-]}                                                                               
+  { "bagel" : [
 
-"""
+    {
+      "title": "molecule",
+      "symmetry": "c1",
+      "basis": "svp",
+      "df_basis": "svp-jkfit",
+      "angstrom": false,
+      "geometry": [
+        {"atom": "O", "xyz": [0.000000000000, 0.000000000000,-0.000000000000] },
+        {"atom": "H", "xyz": [0.000000000000,-0.000000000000, 1.000000000000] },
+        {"atom": "H", "xyz": [0.000000000000, 1.000000000000, 1.000000000000] }
+      ]
+    },
+
+    {
+      "title" : "hf"
+    }
+
+  ]}
+  """
   xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
   xyzfinder = XYZFinder(xyzregex)
   xyzstring = XYZString(string, xyzfinder)
@@ -233,7 +232,8 @@ if __name__ == "__main__":
   mol = Molecule(labels, coordinates)
   print(labels)
   print(coordinates)
-  template = xyzstring.replace_coordinates_with_placeholder('{:> 17.12f}')
-  print(template)
+  template = xyzstring.replace_coordinates_with_placeholder('{:.12f}')
+  print(repr(template))
   c = list(coordinates.flatten())
   print(template.format(*c))
+  print(template.format(*c) == string)

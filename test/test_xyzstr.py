@@ -40,29 +40,28 @@ def test__with_psi_input_string():
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
-
 def test__with_bagel_input_string():
   bagel_input_string = """
-   { "bagel" : [                                                                    
-                                                                                 
-    {                                                                                
-        "title" : "molecule",                                                        
-        "symmetry" : "C1",                                                           
-        "basis" : "svp",                                                             
-        "df_basis" : "svp-jkfit",                                                    
-        "angstrom" : false,                                                          
-        "geometry" : [                                                               
-            {"atom" : "O",  "xyz" : [ 0.0000000000, 0.0000000000,-0.0000000000] },   
-            {"atom" : "H",  "xyz" : [ 0.0000,-0.0000000000, 1.0000000000] },         
-            {"atom" : "H",  "xyz" : [ 0.0000000000, 1.0000000000, 1.0000000000] }    
-        ]                                                                            
-    },                                                                               
-                                                                                 
-    {                                                                                
-        "title" : "hf"                                                               
-    }                                                                                
-                                                                                 
-    ]}                                                                               
+  { "bagel" : [
+
+    {
+      "title": "molecule",
+      "symmetry": "c1",
+      "basis": "svp",
+      "df_basis": "svp-jkfit",
+      "angstrom": false,
+      "geometry": [
+        {"atom": "O", "xyz": [0.000000000000, 0.000000000000,-0.000000000000] },
+        {"atom": "H", "xyz": [0.000000000000,-0.000000000000, 1.000000000000] },
+        {"atom": "H", "xyz": [0.000000000000, 1.000000000000, 1.000000000000] }
+      ]
+    },
+
+    {
+      "title" : "hf"
+    }
+
+  ]}
   """
   xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
   xyzfinder = XYZFinder(xyzregex)
@@ -73,5 +72,35 @@ def test__with_bagel_input_string():
                      [ 0., -0.,  1.],
                      [ 0.,  1.,  1.]]))
 
+def test__coordinate_replacement():
+  bagel_input_string = """
+  { "bagel" : [
 
+    {
+      "title": "molecule",
+      "symmetry": "c1",
+      "basis": "svp",
+      "df_basis": "svp-jkfit",
+      "angstrom": false,
+      "geometry": [
+        {"atom": "O", "xyz": [0.000000000000, 0.000000000000,-0.000000000000] },
+        {"atom": "H", "xyz": [0.000000000000,-0.000000000000, 1.000000000000] },
+        {"atom": "H", "xyz": [0.000000000000, 1.000000000000, 1.000000000000] }
+      ]
+    },
 
+    {
+      "title" : "hf"
+    }
+
+  ]}
+  """
+  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
+  xyzfinder = XYZFinder(xyzregex)
+  xyzstring = XYZString(bagel_input_string, xyzfinder)
+  bagel_input_template = xyzstring.replace_coordinates_with_placeholder('{:.12f}')
+  assert(bagel_input_template != bagel_input_string)
+  coordinates = xyzstring.extract_coordinates()
+  coords_list = list(coordinates.flatten())
+  assert(bagel_input_template.format(*coords_list) == bagel_input_string)
+  
