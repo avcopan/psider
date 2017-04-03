@@ -29,10 +29,11 @@ class Options(object):
         brackets, they must be doubled (i.e. replace '{' with '{{').
       energy_regex: Regex for finding the energy in the output file.  Must
         contain the placeholder @Energy and end in a newline character.
-        For example, " *Total *Energy *= *@Energy *\n", would fork for a simple
+        For example, " *Total *Energy *= *@Energy *\n", would work for a simple
         Psi4 Hartree-Fock output.
       success_regex: Regex that shows the program ran sucessfully
-      correction_regexes: Regex for energy corrections
+      correction_regexes: Regex for energy corrections.  Each one should have
+        the form of an energy regex.
       program: Name of program to be run (specifically the name used by the
         submision program)
       input_name: Name of input file

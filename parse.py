@@ -4,31 +4,35 @@ import re
 import numpy as np
 from . import rehelper
 
-class XYZString(object):
-  """A container for a string containing cartesian coordinates.
+class CoordinateString(object):
+  """A container for a string containing Cartesian coordinates.
 
   A helper for parsing a coordinate-containing string.  Assumes the coordinates
   are contained in the last block of more than two consecutive lines matching
-  the given rehelper.XYZFinder.
+  the given rehelper.CoordinatesFinder.
 
   Attributes:
     string: A string containing a block of more than two consecutive lines that
-      match xyzfinder.regex.
-    xyzfinder: An rehelper.XYZFinder object.
+      match coordinatesfinder.get_regex().
+    coordsfinder: An rehelper.CoordinatesFinder() object.
     unitsfinder: A rehelper.UnitsFinder object.
-    regex: Regex for finding the Cartesian coordinates within the string.
+    body: The lines in `string` containing the Cartesian coordinates.
+    head: The lines above the body.
+    foot: The lines below the body.
   """
 
-  def __init__(self, string, xyzfinder = rehelper.XYZFinder(),
+  def __init__(self, string, coordsfinder = rehelper.CoordinatesFinder(),
                              unitsfinder = rehelper.UnitsFinder()):
-    self.string = string.replace('{', '{{').replace('}', '}}')
-    self.xyzfinder = xyzfinder
-    if not isinstance(self.xyzfinder, rehelper.XYZFinder):
-      raise Exception("The 'xyzfinder' argument must be an instance of the "
-                      "class rehelper.XYZFinder.")
+    self.string = string
+    self.coordsfinder = coordsfinder
+    if not isinstance(self.coordsfinder, rehelper.CoordinatesFinder):
+      raise Exception("The 'coordsfinder' argument must be an instance of the "
+                      "class rehelper.CoordinatesFinder.")
     self.unitsfinder = unitsfinder
-    self.regex = rehelper.two_or_more(xyzfinder.get_regex())
-    start, end = self._get_last_match().span()
+    # Split the string into a head, a foot, and a body containing the 
+    regex = self.coordsfinder.get_regex()
+    match = rehelper.get_last_match(regex, self.string, re.MULTILINE)
+    start, end = match.span()
     self.head = self.string[:start]
     self.body = self.string[start:end]
     self.foot = self.string[end:]
@@ -54,7 +58,7 @@ class XYZString(object):
     Returns:
       tuple: A tuple of atomic labels.
     """
-    regex = self.xyzfinder.get_label_regex()
+    regex = self.coordsfinder.linefinder.get_label_regex()
     return tuple(re.findall(regex, self.body))
 
   def extract_coordinates(self):
@@ -63,7 +67,7 @@ class XYZString(object):
     Returns:
       numpy.ndarray: A numpy array of coordinates.
     """
-    regex = self.xyzfinder.get_coordinates_regex()
+    regex = self.coordsfinder.linefinder.get_coordinates_regex()
     coordinates = np.array(re.findall(regex, self.body))
     return coordinates.astype(np.float)
 
@@ -77,7 +81,7 @@ class XYZString(object):
       str: A copy of `self.string`, with coordinates replaced by `placeholder`.
     """
     body = ''
-    regex = self.xyzfinder.get_coordinates_inverse_regex()
+    regex = self.coordsfinder.linefinder.get_coordinates_inverse_regex()
     for line in self.body.splitlines():
       line += '\n'
       match = re.search(regex, line)
@@ -87,30 +91,25 @@ class XYZString(object):
         body += (placeholder).join(match.groups())
     return ''.join([self.head, body, self.foot])
 
-  def _get_last_match(self):
-    match = None
-    for match in re.finditer(self.regex, self.string, re.MULTILINE):
-      pass
-    if not match:
-      raise Exception("No Cartesian coordinates found in this string.")
-    return match
 
+def EnergyString(object):
+  """A container for a string containing the energy, and possibly the gradient.
 
-def OutfileString(object):
-  """A container for the job output file string.
-
-  A helper for parsing a string containing the energy, and possibly also the
-  gradient.
+  Attributes:
   """
 
-  def __init__(self, string, energyfinder, successfinder, gradientfinder=None):
+  def __init__(self, string, successregex, energyfinder,
+               gradheader = None, gradlinefinder = None, gradfooter = None):
     self.string = self.string
+    self.successregex = successregex
     self.energyfinder = energyfinder
     if not isinstance(self.energyfinder, rehelper.EnergyFinder):
       raise Exception("The 'energyfinder' argument must be an instance of the "
                       "class rehelper.EnergyFinder.")
-    self.successfinder = successfinder
-    self.gradientfinder = gradientfinder
+    self.gradlinefinder = gradientfinder
+    if not isinstance(self.energyfinder, rehelper.EnergyFinder):
+      raise Exception("The 'energyfinder' argument must be an instance of the "
+                      "class rehelper.EnergyFinder.")
 
 
 if __name__ == "__main__":
@@ -139,17 +138,17 @@ if __name__ == "__main__":
 
   ]}
   """
-  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
-  xyzfinder = rehelper.XYZFinder(xyzregex)
-  xyzstring = XYZString(string, xyzfinder)
-  # Make a molecule object from the coordinates contained in the template file.
-  labels = xyzstring.extract_labels()
-  coordinates = xyzstring.extract_coordinates()
-  mol = Molecule(labels, coordinates)
+  rstring = string.replace('{', '{{').replace('}', '}}')
+  linefinder = rehelper.CoordinatesLineFinder(r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n')
+  print(linefinder)
+  coordsfinder = rehelper.CoordinatesFinder(linefinder)
+  coordstring = CoordinateString(rstring, coordsfinder)
+  labels = coordstring.extract_labels()
+  coordinates = coordstring.extract_coordinates()
   print(labels)
   print(coordinates)
-  template = xyzstring.replace_coordinates_with_placeholder('{:.12f}')
-  print(repr(template))
+  template = coordstring.replace_coordinates_with_placeholder('{:.12f}')
+  print(template)
   c = list(coordinates.flatten())
   print(template.format(*c))
   print(template.format(*c) == string)

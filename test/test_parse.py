@@ -1,4 +1,4 @@
-from psider.parse import XYZString
+from psider.parse import CoordinateString
 import numpy as np
 
 
@@ -9,10 +9,10 @@ def test__with_mol_string():
     H  0.0000000000 -0.7490459967  0.5135472375
     H  0.0000000000  0.7490459967  0.5135472375
   """
-  xyzstring = XYZString(mol_string)
-  assert(xyzstring.extract_units() == 'angstrom')
-  assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
-  assert(np.allclose(xyzstring.extract_coordinates(),
+  coordstring = CoordinateString(mol_string)
+  assert(coordstring.extract_units() == 'angstrom')
+  assert(coordstring.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(coordstring.extract_coordinates(),
                     [[ 0.,  0.      , -0.06471629],
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
@@ -30,15 +30,15 @@ def test__with_psi_input_string():
     set basis sto-3g
     energy('scf')
   """
-  xyzstring = XYZString(psi_input_string)
-  assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
-  assert(np.allclose(xyzstring.extract_coordinates(),
+  coordstring = CoordinateString(psi_input_string)
+  assert(coordstring.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(coordstring.extract_coordinates(),
                     [[ 0.,  0.      , -0.06471629],
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
 def test__with_bagel_input_string():
-  from psider.rehelper import XYZFinder
+  from psider.rehelper import CoordinatesLineFinder, CoordinatesFinder
 
   bagel_input_string = """
   { "bagel" : [
@@ -62,17 +62,18 @@ def test__with_bagel_input_string():
 
   ]}
   """
-  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
-  xyzfinder = XYZFinder(xyzregex)
-  xyzstring = XYZString(bagel_input_string, xyzfinder)
-  assert(xyzstring.extract_labels() == ('O', 'H', 'H'))
-  assert(np.allclose(xyzstring.extract_coordinates(),
+  lineregex = r' *{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *},? *\n'
+  linefinder = CoordinatesLineFinder(lineregex)
+  coordsfinder = CoordinatesFinder(linefinder)
+  coordstring = CoordinateString(bagel_input_string, coordsfinder)
+  assert(coordstring.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(coordstring.extract_coordinates(),
                     [[ 0.,  0., -0.],
                      [ 0., -0.,  1.],
                      [ 0.,  1.,  1.]]))
 
 def test__coordinate_replacement():
-  from psider.rehelper import XYZFinder
+  from psider.rehelper import CoordinatesLineFinder, CoordinatesFinder
 
   bagel_input_string = """
   { "bagel" : [
@@ -96,12 +97,14 @@ def test__coordinate_replacement():
 
   ]}
   """
-  xyzregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
-  xyzfinder = XYZFinder(xyzregex)
-  xyzstring = XYZString(bagel_input_string, xyzfinder)
-  bagel_input_template = xyzstring.replace_coordinates_with_placeholder('{:.12f}')
+  formattable_string = bagel_input_string.replace('{', '{{').replace('}', '}}')
+  lineregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
+  linefinder = CoordinatesLineFinder(lineregex)
+  coordsfinder = CoordinatesFinder(linefinder)
+  coordstring = CoordinateString(formattable_string, coordsfinder)
+  bagel_input_template = coordstring.replace_coordinates_with_placeholder('{:.12f}')
   assert(bagel_input_template != bagel_input_string)
-  coordinates = xyzstring.extract_coordinates()
+  coordinates = coordstring.extract_coordinates()
   coords_list = list(coordinates.flatten())
   assert(bagel_input_template.format(*coords_list) == bagel_input_string)
   
