@@ -4,7 +4,7 @@ class Options(object):
 
   def __init__(self,
                template_file_path="template.dat",
-               xyz_regex="\s*@AtomicSymbol\s+@XCoord\s+@YCoord\s+@ZCoord\n",
+               xyz_regex="\s*@Atom\s+@XCoord\s+@YCoord\s+@ZCoord\n",
                energy_regex="",
                success_regex="",
                correction_regexes=None,
@@ -22,11 +22,11 @@ class Options(object):
 
     Attributes:
       template_file_path: Path to the template input file
-      xyz_regex: Regex that finds Cartesian coordinates in the template file.
-        Must contain @AtomicSymbol, @XCoord, @YCoord, and @ZCoord, indicating
-        the positions of the atomic symbol and its associated coordinate values.
-        Also must end in a newline. If the line contains brackets, they must be
-        doubled (i.e. replace '{' with '{{').
+      xyz_regex: Regex for finding a line containing Cartesian coordinates.
+        Must contain @Atom, @XCoord, @YCoord, and @ZCoord, indicating where the
+        atomic symbol and its associated coordinate values are in the string,
+        and must end with a newline character, '\n'.  If the line contains
+        brackets, they must be doubled (i.e. replace '{' with '{{').
       energy_regex: Regex that finds the energy and returns a match object with
         the energy as the only group
       success_regex: Regex that shows the program ran sucessfully

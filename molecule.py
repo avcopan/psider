@@ -1,7 +1,7 @@
 from psi4 import core
 import numpy as np
 import re
-from . import regex
+from . import rehelper
 from . import atomdata
 from . import physconst
 
@@ -24,11 +24,11 @@ class Molecule(object):
 
   @classmethod
   def from_string(cls, mol_string):
-    units_regex = regex.line("units", regex.capture(regex.word))
-    label_regex = regex.line(regex.capture(regex.atomic_symbol),
-                             *(3 * [regex.float_]))
-    xyz_regex = regex.spaced(regex.atomic_symbol,
-                             *(3 * [regex.capture(regex.float_)]))
+    units_regex = rehelper.line("units", rehelper.capture(rehelper.word))
+    label_regex = rehelper.line(rehelper.capture(rehelper.atomic_symbol),
+                             *(3 * [rehelper.float_]))
+    xyz_regex = rehelper.spaced(rehelper.atomic_symbol,
+                             *(3 * [rehelper.capture(rehelper.float_)]))
     units = re.search(units_regex, mol_string).group(1).lower()
     labels = [match.group(1).upper()
               for match in re.finditer(label_regex, mol_string)]

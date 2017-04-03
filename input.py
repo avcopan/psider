@@ -1,8 +1,3 @@
-import re
-from . import regex
-from .options import Options
-from .molecule import Molecule
-
 class InputFile(object):
   """An input file object.
 
@@ -20,12 +15,5 @@ class InputFile(object):
     """
     coordinates = list(geometry_array.flatten())
     return self.template_string.format(*coordinates)
-    
-
-    
 
 
-if __name__ == "__main__":
-  options = Options()
-  string = open('template.dat').read()
-  tmp = TemplateFileProcessor(string, options)
