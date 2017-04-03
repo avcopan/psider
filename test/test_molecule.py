@@ -11,7 +11,8 @@ def test__from_string():
   mol = Molecule.from_string(mol_string)
   assert(mol.units == 'angstrom')
   assert(mol.labels == ('O', 'H', 'H'))
-  assert(np.allclose(mol.coordinates, [[ 0.,  0.      , -0.06471629],
-                                       [ 0., -0.749046,  0.51354724],
-                                       [ 0.,  0.749046,  0.51354724]]))
+  assert(np.allclose(mol.coordinates,
+                    [[ 0.,  0.      , -0.06471629],
+                     [ 0., -0.749046,  0.51354724],
+                     [ 0.,  0.749046,  0.51354724]]))
 

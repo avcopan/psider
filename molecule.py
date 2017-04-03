@@ -4,6 +4,7 @@ import re
 from . import rehelper
 from . import atomdata
 from . import physconst
+from .xyzstr import UnitsFinder, XYZFinder, XYZString
 
 class Molecule(object):                                                          
   """A class to store information about a chemical system.                       
@@ -24,18 +25,14 @@ class Molecule(object):
 
   @classmethod
   def from_string(cls, mol_string):
-    units_regex = rehelper.line("units", rehelper.capture(rehelper.word))
-    label_regex = rehelper.line(rehelper.capture(rehelper.atomic_symbol),
-                             *(3 * [rehelper.float_]))
-    xyz_regex = rehelper.spaced(rehelper.atomic_symbol,
-                             *(3 * [rehelper.capture(rehelper.float_)]))
-    units = re.search(units_regex, mol_string).group(1).lower()
-    labels = [match.group(1).upper()
-              for match in re.finditer(label_regex, mol_string)]
-    coordinates = np.array([[float(coord) for coord in match.groups()]
-                            for match in re.finditer(xyz_regex, mol_string)])
+    print(mol_string)
+    unitsfinder = UnitsFinder()
+    xyzfinder = XYZFinder()
+    xyzstring = XYZString(mol_string, xyzfinder, unitsfinder)
+    units = xyzstring.extract_units()
+    labels = xyzstring.extract_labels()
+    coordinates = xyzstring.extract_coordinates()
     return cls(labels, coordinates, units)
-
 
   def __init__(self, labels, coordinates, units = "angstrom"):
     """Initialize this Molecule object.                                          
@@ -45,7 +42,8 @@ class Molecule(object):
     self.units = str(units.lower())
     self.masses = [atomdata.get_mass(label) for label in labels]
     self.natom = len(labels)
-    assert self.units in ("angstrom", "bohr")
+    if not self.units in ("angstrom", "bohr"):
+      raise ValueError("Coordinates must have units 'angstrom' or 'bohr'.")
 
   def set_units(self, units):
     if units == "angstrom" and self.units == "bohr":
