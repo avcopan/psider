@@ -1,4 +1,4 @@
-from psinglepoint.xyzstr import UnitsFinder, XYZFinder, XYZString
+from psider.xyzstr import UnitsFinder, XYZFinder, XYZString
 import numpy as np
 
 

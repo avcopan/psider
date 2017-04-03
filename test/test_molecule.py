@@ -1,4 +1,4 @@
-from psinglepoint.molecule import Molecule
+from psider.molecule import Molecule
 import numpy as np
 
 def test__from_string():
