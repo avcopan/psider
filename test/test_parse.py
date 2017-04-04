@@ -1,4 +1,4 @@
-from psider.parse import CoordinateString, EnergyString
+from psider.parse import CoordinateString, EnergyString, GradientString
 import numpy as np
 
 
@@ -62,9 +62,8 @@ def test__coordinatestring_with_bagel_input_string():
 
   ]}
   """
-  lineregex = r' *{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *},? *\n'
-  linefinder = CoordinatesLineFinder(lineregex)
-  coordsfinder = CoordinatesFinder(linefinder)
+  regex = r' *{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *},? *\n'
+  coordsfinder = CoordinatesFinder(regex)
   coordstring = CoordinateString(bagel_input_string, coordsfinder)
   assert(coordstring.extract_labels() == ('O', 'H', 'H'))
   assert(np.allclose(coordstring.extract_coordinates(),
@@ -98,9 +97,8 @@ def test__coordinatestring_replacement():
   ]}
   """
   formattable_string = bagel_input_string.replace('{', '{{').replace('}', '}}')
-  lineregex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
-  linefinder = CoordinatesLineFinder(lineregex)
-  coordsfinder = CoordinatesFinder(linefinder)
+  regex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
+  coordsfinder = CoordinatesFinder(regex)
   coordstring = CoordinateString(formattable_string, coordsfinder)
   bagel_input_template = coordstring.replace_coordinates_with_placeholder('{:.12f}')
   assert(bagel_input_template != bagel_input_string)
@@ -131,3 +129,37 @@ def test__energystring_with_psi_output_string():
   energystring = EnergyString(psi_output_string, energyfinder, successregex)
   assert(np.isclose(energystring.extract_energy(), -74.9610739291330503))
   assert(energystring.check_success() == False)
+
+
+def test__gradientstring_with_psi_output_string():
+  from psider.rehelper import GradientFinder
+  psi_output_string = """
+  -Total Gradient:
+     Atom            X                  Y                   Z
+    ------   -----------------  -----------------  -----------------
+       1        0.000000000000     0.000000000000     0.000000000000
+       2        0.000000000000     0.000000000000     0.000000000000
+       3        0.000000000000     0.000000000000     0.000000000000
+  -Total Gradient:
+     Atom            X                  Y                   Z
+    ------   -----------------  -----------------  -----------------
+       1        0.000000000000     0.000000000000     0.080750158386
+       2       -0.000000000000     0.036903026214    -0.040375079193
+       3        0.000000000000    -0.036903026214    -0.040375079193
+  -Totally Not The Gradient:
+     Atom            X                  Y                   Z
+    ------   -----------------  -----------------  -----------------
+       1        0.000000000000     0.000000000000     0.000000000000
+       2        0.000000000000     0.000000000000     0.000000000000
+       3        0.000000000000     0.000000000000     0.000000000000
+  """
+  regex = r' +\d +@XGrad +@YGrad +@ZGrad *\n'
+  head = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
+  foot = ''
+  gradfinder = GradientFinder(regex, head, foot)
+  gradstring = GradientString(psi_output_string, gradfinder)
+  assert(np.allclose(gradstring.extract_gradient(),
+                    [[ 0.,  0.        ,  0.08075016],
+                     [-0.,  0.03690303, -0.04037508],
+                     [ 0., -0.03690303, -0.04037508]]))
+

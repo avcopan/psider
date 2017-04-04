@@ -12,13 +12,12 @@ class CoordinateString(object):
   the given rehelper.CoordinatesFinder.
 
   Attributes:
-    string: A string containing a block of more than two consecutive lines that
-      match coordinatesfinder.get_regex().
+    string: A string containing a block that matches coordsfinder.get_regex().
     coordsfinder: An rehelper.CoordinatesFinder object.
     unitsfinder: A rehelper.UnitsFinder object.
-    body: The lines in `string` containing the Cartesian coordinates.
-    head: The lines above the body.
-    foot: The lines below the body.
+    _body: The lines in `string` containing the Cartesian coordinates.
+    _head: The lines above the body.
+    _foot: The lines below the body.
   """
 
   def __init__(self, string, coordsfinder = rehelper.CoordinatesFinder(),
@@ -29,13 +28,13 @@ class CoordinateString(object):
       raise ValueError("The 'coordsfinder' argument must be an instance of the "
                        "class rehelper.CoordinatesFinder.")
     self.unitsfinder = unitsfinder
-    # Split the string into a head, a foot, and a body containing the 
+    # Split the string into a head, a foot, and a body containing the geometry.
     regex = self.coordsfinder.get_regex()
     match = rehelper.get_last_match(regex, self.string, re.MULTILINE)
     start, end = match.span()
-    self.head = self.string[:start]
-    self.body = self.string[start:end]
-    self.foot = self.string[end:]
+    self._head = self.string[:start]
+    self._body = self.string[start:end]
+    self._foot = self.string[end:]
 
   def extract_units(self):
     """Extract the units from `string`, if present.
@@ -53,26 +52,26 @@ class CoordinateString(object):
     return match.group(1).lower()
 
   def extract_labels(self):
-    """Extract the labels from the coordinate block.
+    """Extract the labels from the body.
 
     Returns:
       tuple: A tuple of atomic labels.
     """
     regex = self.coordsfinder.linefinder.get_label_regex()
-    return tuple(re.findall(regex, self.body))
+    return tuple(re.findall(regex, self._body))
 
   def extract_coordinates(self):
-    """Extract coordinates from the coordinate block.
+    """Extract coordinates from the body.
 
     Returns:
       numpy.ndarray: A numpy array of coordinates.
     """
     regex = self.coordsfinder.linefinder.get_coordinates_regex()
-    coordinates = np.array(re.findall(regex, self.body))
+    coordinates = np.array(re.findall(regex, self._body))
     return coordinates.astype(np.float)
 
   def replace_coordinates_with_placeholder(self, placeholder):
-    """Replace coordinates in the coordinate block with a placeholder.
+    """Replace coordinates in the body with a placeholder.
 
     Args:
       placeholder: The string to put in place of the coordinates
@@ -82,18 +81,18 @@ class CoordinateString(object):
     """
     body = ''
     regex = self.coordsfinder.linefinder.get_coordinates_inverse_regex()
-    for line in self.body.splitlines():
+    for line in self._body.splitlines():
       line += '\n'
       match = re.search(regex, line)
       if not match:
         body += line
       else:
         body += (placeholder).join(match.groups())
-    return ''.join([self.head, body, self.foot])
+    return ''.join([self._head, body, self._foot])
 
 
 class EnergyString(object):
-  """A container for a string containing the energy, and possibly the gradient.
+  """A container for a string containing the energy.
 
   Attributes:
     string: A string containing the energy.
@@ -133,6 +132,38 @@ class EnergyString(object):
     match = re.search(self.successregex, self.string)
     return bool(match)
 
+class GradientString(object):
+  """A container for a string containing the gradient.
+
+  Attributes:
+    string: A string containing a block that matches gradfinder.get_regex().
+    gradfinder: An rehelper.GradientFinder object.
+    _body: The lines in `string` containing the Gradient.
+    _head: The lines above the body.
+    _foot: The lines below the body.
+  """
+
+  def __init__(self, string, gradfinder):
+    self.string = string
+    self.gradfinder = gradfinder
+    if not isinstance(self.gradfinder, rehelper.GradientFinder):
+      raise ValueError("The 'gradfinder' argument must be an instance of the "
+                       "class rehelper.GradientFinder.")
+    # Split the string into a head, a foot, and a body containing the gradient.
+    regex = self.gradfinder.get_regex()
+    match = rehelper.get_last_match(regex, self.string, re.MULTILINE)
+    start, end = match.span()
+    self._head = self.string[:start]
+    self._body = self.string[start:end]
+    self._foot = self.string[end:]
+
+  def extract_gradient(self):
+    """Extract the gradient from the body.
+    """
+    regex = self.gradfinder.linefinder.get_gradient_regex()
+    gradient = np.array(re.findall(regex, self._body))
+    return gradient.astype(np.float)
+
 
 if __name__ == "__main__":
   string = open('output.dat').read()
@@ -141,3 +172,9 @@ if __name__ == "__main__":
   energystring = EnergyString(string, energyfinder, successregex)
   print(energystring.extract_energy())
   print(energystring.check_success())
+  regex = r' +\d +@XGrad +@YGrad +@ZGrad *\n'
+  head = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
+  foot = ''
+  gradfinder = rehelper.GradientFinder(regex, head, foot)
+  gradstring = GradientString(string, gradfinder)
+  print(gradstring.extract_gradient())

@@ -63,28 +63,28 @@ class CoordinatesLineFinder(object):
                        "@Atom, @XCoord, @YCoord, @ZCoord.")
 
   def get_regex(self):
-    """Return non-capturing XYZ line regex.
+    """Return non-capturing coordinate line regex.
     """
     ret = re.sub('@Atom', atomic_symbol, self.regex)
     ret = re.sub('@.Coord', float_, ret)
     return ret
 
   def get_label_regex(self):
-    """Return XYZ line regex capturing the atom label.
+    """Return coordinate line regex capturing the atom label.
     """
     ret = re.sub('@Atom', capture(atomic_symbol), self.regex)
     ret = re.sub('@.Coord', float_, ret)
     return ret
 
   def get_coordinates_regex(self):
-    """Return XYZ line regex capturing all of the coordinates.
+    """Return coordinate line regex capturing coordinates.
     """
     ret = re.sub('@Atom', atomic_symbol, self.regex)
     ret = re.sub('@.Coord', capture(float_), ret)
     return ret
 
   def get_coordinates_inverse_regex(self):
-    """Return XYZ line regex capturing everything but the coordinates.
+    """Return coordinate line regex capturing everything but the coordinates.
     """
     ret = re.sub('@Atom', atomic_symbol, self.regex)
     parts = re.sub('.Coord', '', ret).split('@')
@@ -96,25 +96,32 @@ class CoordinatesFinder(object):
 
   Attributes:
     linefinder: A CoordinatesLineFinder object.
-    header: Text immediately preceding the coordinates.
-    footer: Text immediately following the coordinates.
+    head: Text immediately preceding the coordinates.
+    foot: Text immediately following the coordinates.
   """
 
-  def __init__(self, linefinder = CoordinatesLineFinder(),
-                     header = '', footer = ''):
-    self.linefinder = linefinder
-    self.header = str(header)
-    self.footer = str(footer)
-    if not isinstance(self.linefinder, CoordinatesLineFinder):
-      raise ValueError("The 'linefinder' argument must be an instance of "
-                       "the CoordinatesLineFinder class.")
+  def __init__(self, regex = ' *@Atom +@XCoord +@YCoord +@ZCoord *\n',
+                     head = '', foot = ''):
+    """Initialize the coordinates finder
+
+    Args:
+      regex: Regex for finding a line containing Cartesian coordinates. Contains
+        the placeholders '@Atom', '@XCoord', '@YCoord', and '@ZCoord' at the
+        positions of the atomic symbol and its associated coordinate values in the
+        string. Always must end in a newline.
+      head: Text immediately preceding the coordinates.
+      foot: Text immediately following the coordinates.
+    """
+    self.linefinder = CoordinatesLineFinder(regex)
+    self.head = str(head)
+    self.foot = str(foot)
 
   def get_regex(self):
     """Return non-capturing gradient regex.
     """
-    ret = self.header
+    ret = self.head
     ret += two_or_more(self.linefinder.get_regex())
-    ret += self.footer
+    ret += self.foot
     return ret
 
 
@@ -157,7 +164,7 @@ class GradientLineFinder(object):
     ret = re.sub('@.Grad', float_, self.regex)
     return ret
 
-  def get_gradient_line_regex(self):
+  def get_gradient_regex(self):
     """Return capturing gradient line regex.
     """
     ret = re.sub('@.Grad', capture(float_), self.regex)
@@ -169,13 +176,22 @@ class GradientFinder(object):
 
   Attributes:
     linefinder: A GradientLineFinder object.
-    header: Text immediately preceding the gradient lines.
-    footer: Text immediately following the gradient lines.
+    head: Text immediately preceding the gradient lines.
+    foot: Text immediately following the gradient lines.
   """
-  def __init__(self, linefinder, header = '', footer = ''):
-    self.linefinder = linefinder
-    self.header = str(header)
-    self.footer = str(footer)
+  def __init__(self, regex, head = '', foot = ''):
+    """Initialize the gradient finder.
+
+    Args:
+      regex: Regex for finding a line containing elements of the gradient.  Must
+        contain the placeholders '@XGrad', '@YGrad', and '@ZGrad' and end in
+        a newline.
+      head: Text immediately preceding the coordinates.
+      foot: Text immediately following the coordinates.
+    """
+    self.linefinder = GradientLineFinder(regex)
+    self.head = str(head)
+    self.foot = str(foot)
     if not isinstance(self.linefinder, GradientLineFinder):
       raise ValueError("The 'linefinder' argument must be an instance of "
                        "the GradientLineFinder class.")
@@ -183,17 +199,19 @@ class GradientFinder(object):
   def get_regex(self):
     """Return non-capturing gradient regex.
     """
-    ret = self.header
+    ret = self.head
     ret += two_or_more(self.linefinder.get_regex())
-    ret += self.footer
+    ret += self.foot
     return ret
 
 
 if __name__ == "__main__":
-  s = open('output.dat').read()
-  linefinder = GradientLineFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n')
-  header = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
-  footer = ''
-  gradientfinder = GradientFinder(linefinder, header, footer)
+  string = open('output.dat').read()
+  lineregex = r' +\d +@XGrad +@YGrad +@ZGrad *\n'
+  head = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
+  foot = ''
+  gradientfinder = GradientFinder(lineregex, head, foot)
   regex = gradientfinder.get_regex()
-  
+  match = re.search(regex, string)
+  print(match)
+  print(match.group(0))

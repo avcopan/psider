@@ -31,7 +31,7 @@ def test__gradient_finder():
        3        0.000000000000    -0.036903026214    -0.040375079193
   """
   gradlinefinder = GradientLineFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n')
-  regex = gradlinefinder.get_gradient_line_regex()
+  regex = gradlinefinder.get_gradient_regex()
   assert(re.findall(regex, psi_output_string) ==
     [('0.000000000000',  '0.000000000000',  '0.080750158386'),
      ('-0.000000000000', '0.036903026214', '-0.040375079193'),
