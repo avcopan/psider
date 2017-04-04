@@ -1,8 +1,9 @@
+"""Module defining the molecule class.
+"""
 from psi4 import core
 import numpy as np
 import re
-from . import atomdata
-from . import physconst
+from .util import atomdata, physconst
 from .parse import CoordinateString
 
 class Molecule(object):                                                          
