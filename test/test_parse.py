@@ -1,8 +1,8 @@
-from psider.parse import CoordinateString
+from psider.parse import CoordinateString, EnergyString
 import numpy as np
 
 
-def test__with_mol_string():
+def test__coordinatestring_with_molecule_string():
   mol_string = """
     units angstrom
     O  0.0000000000  0.0000000000 -0.0647162893
@@ -17,7 +17,7 @@ def test__with_mol_string():
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
-def test__with_psi_input_string():
+def test__coordinatestring_with_psi_input_string():
   psi_input_string = """
     memory 270 mb
 
@@ -37,7 +37,7 @@ def test__with_psi_input_string():
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
-def test__with_bagel_input_string():
+def test__coordinatestring_with_bagel_input_string():
   from psider.rehelper import CoordinatesLineFinder, CoordinatesFinder
 
   bagel_input_string = """
@@ -72,7 +72,7 @@ def test__with_bagel_input_string():
                      [ 0., -0.,  1.],
                      [ 0.,  1.,  1.]]))
 
-def test__coordinate_replacement():
+def test__coordinatestring_replacement():
   from psider.rehelper import CoordinatesLineFinder, CoordinatesFinder
 
   bagel_input_string = """
@@ -107,4 +107,27 @@ def test__coordinate_replacement():
   coordinates = coordstring.extract_coordinates()
   coords_list = list(coordinates.flatten())
   assert(bagel_input_template.format(*coords_list) == bagel_input_string)
-  
+
+
+def test__energystring_with_psi_output_string():
+  from psider.rehelper import EnergyFinder
+  psi_output_string = """
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              9.3006650611521877
+    One-Electron Energy =                -122.5548262505967756
+    Two-Electron Energy =                  38.2930872603115446
+    DFT Exchange-Correlation Energy =       0.0000000000000000
+    Empirical Dispersion Energy =           0.0000000000000000
+    PCM Polarization Energy =               0.0000000000000000
+    EFP Energy =                            0.0000000000000000
+    Total Energy =                          0.0000000000000000
+    Total Energy =                        -74.9610739291330503
+
+    Alert: EFP and PCM quantities not currently incorporated into SCF psivars.
+  """
+  energyfinder = EnergyFinder(r' *Total Energy *= *@Energy *\n')
+  successregex = r'\*\*\* P[Ss][Ii]4 exiting successfully.'
+  energystring = EnergyString(psi_output_string, energyfinder, successregex)
+  assert(np.isclose(energystring.extract_energy(), -74.9610739291330503))
+  assert(energystring.check_success() == False)

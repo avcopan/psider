@@ -77,4 +77,4 @@ class Options(object):
         except:
           raise Exception("Attempt to set local psi4 option {:s} with {:s} failed.".format(key, str(value)))
       else:
-        raise Exception("Unrecognized keyword {:s}".format(str(key)))
+        raise ValueError("Unrecognized keyword {:s}".format(str(key)))

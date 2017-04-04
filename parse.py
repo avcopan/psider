@@ -14,7 +14,7 @@ class CoordinateString(object):
   Attributes:
     string: A string containing a block of more than two consecutive lines that
       match coordinatesfinder.get_regex().
-    coordsfinder: An rehelper.CoordinatesFinder() object.
+    coordsfinder: An rehelper.CoordinatesFinder object.
     unitsfinder: A rehelper.UnitsFinder object.
     body: The lines in `string` containing the Cartesian coordinates.
     head: The lines above the body.
@@ -26,8 +26,8 @@ class CoordinateString(object):
     self.string = string
     self.coordsfinder = coordsfinder
     if not isinstance(self.coordsfinder, rehelper.CoordinatesFinder):
-      raise Exception("The 'coordsfinder' argument must be an instance of the "
-                      "class rehelper.CoordinatesFinder.")
+      raise ValueError("The 'coordsfinder' argument must be an instance of the "
+                       "class rehelper.CoordinatesFinder.")
     self.unitsfinder = unitsfinder
     # Split the string into a head, a foot, and a body containing the 
     regex = self.coordsfinder.get_regex()
@@ -44,12 +44,12 @@ class CoordinateString(object):
       str: A string indicating the units, 'bohr' or 'angstrom'.
     """
     if not isinstance(self.unitsfinder, rehelper.UnitsFinder):
-      raise Exception("This method requires the 'unitsfinder' attribute to be "
-                      "an instance of the class rehelper.UnitsFinder.")
+      raise ValueError("This method requires the 'unitsfinder' attribute to be "
+                       "an instance of the class rehelper.UnitsFinder.")
     regex = self.unitsfinder.get_units_regex()
-    match = re.search(regex, self.string)
+    match = rehelper.get_last_match(regex, self.string)
     if not match:
-      raise Exception("Couldn't find a match for the units regex.")
+      raise ValueError("Couldn't find a match for the units regex.")
     return match.group(1).lower()
 
   def extract_labels(self):
@@ -92,63 +92,52 @@ class CoordinateString(object):
     return ''.join([self.head, body, self.foot])
 
 
-def EnergyString(object):
+class EnergyString(object):
   """A container for a string containing the energy, and possibly the gradient.
 
   Attributes:
+    string: A string containing the energy.
+    energyfinder: An rehelper.EnergyFinder object.
+    successregex: A regex that matches `string` if the job ran successfully.
   """
 
-  def __init__(self, string, successregex, energyfinder,
-               gradheader = None, gradlinefinder = None, gradfooter = None):
-    self.string = self.string
+  def __init__(self, string, energyfinder, successregex = None):
+    self.string = string
     self.successregex = successregex
     self.energyfinder = energyfinder
     if not isinstance(self.energyfinder, rehelper.EnergyFinder):
-      raise Exception("The 'energyfinder' argument must be an instance of the "
-                      "class rehelper.EnergyFinder.")
-    self.gradlinefinder = gradientfinder
-    if not isinstance(self.energyfinder, rehelper.EnergyFinder):
-      raise Exception("The 'energyfinder' argument must be an instance of the "
-                      "class rehelper.EnergyFinder.")
+      raise ValueError("The 'energyfinder' argument must be an instance of the "
+                       "class rehelper.EnergyFinder.")
+
+  def extract_energy(self):
+    """Extract the energy from `string`.
+
+    Returns:
+      float: The last energy found in the string.
+    """
+    regex = self.energyfinder.get_energy_regex()
+    match = rehelper.get_last_match(regex, self.string)
+    if not match:
+      raise ValueError("Couldn't find a match for the energy regex.")
+    return float(match.group(1))
+
+  def check_success(self):
+    """Determine success value.
+
+    Returns:
+      bool: Whether or not `self.successregex` has a match.
+    """
+    if not isinstance(self.successregex, str):
+      raise ValueError("This method requires the 'successregex' attribute to "
+                       "be set to a string value.")
+    match = re.search(self.successregex, self.string)
+    return bool(match)
 
 
 if __name__ == "__main__":
-  from .molecule import Molecule
-  from .options import Options
-  # Build some helper objects.
-  string = """
-  { "bagel" : [
-
-    {
-      "title": "molecule",
-      "symmetry": "c1",
-      "basis": "svp",
-      "df_basis": "svp-jkfit",
-      "angstrom": false,
-      "geometry": [
-        {"atom": "O", "xyz": [0.000000000000, 0.000000000000,-0.000000000000] },
-        {"atom": "H", "xyz": [0.000000000000,-0.000000000000, 1.000000000000] },
-        {"atom": "H", "xyz": [0.000000000000, 1.000000000000, 1.000000000000] }
-      ]
-    },
-
-    {
-      "title" : "hf"
-    }
-
-  ]}
-  """
-  rstring = string.replace('{', '{{').replace('}', '}}')
-  linefinder = rehelper.CoordinatesLineFinder(r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n')
-  print(linefinder)
-  coordsfinder = rehelper.CoordinatesFinder(linefinder)
-  coordstring = CoordinateString(rstring, coordsfinder)
-  labels = coordstring.extract_labels()
-  coordinates = coordstring.extract_coordinates()
-  print(labels)
-  print(coordinates)
-  template = coordstring.replace_coordinates_with_placeholder('{:.12f}')
-  print(template)
-  c = list(coordinates.flatten())
-  print(template.format(*c))
-  print(template.format(*c) == string)
+  string = open('output.dat').read()
+  energyfinder = rehelper.EnergyFinder(r' *Total Energy *= *@Energy *\n')
+  successregex = r'\*\*\* P[Ss][Ii]4 exiting successfully.'
+  energystring = EnergyString(string, energyfinder, successregex)
+  print(energystring.extract_energy())
+  print(energystring.check_success())

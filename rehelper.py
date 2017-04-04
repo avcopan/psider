@@ -22,7 +22,7 @@ def get_last_match(pattern, string, flags = 0):
   for match in re.finditer(pattern, string, flags):
     pass
   if not match:
-    raise Exception("No match found in string.")
+    raise ValueError("No match found in string.")
   return match
 
 
@@ -38,7 +38,7 @@ class UnitsFinder(object):
   def __init__(self, regex = ' *units +@Units *\n'):
     self.regex = regex
     if not '@Units' in self.regex:
-      raise Exception("This regex must contain the placeholder @Units.")
+      raise ValueError("This regex must contain the placeholder @Units.")
 
   def get_units_regex(self):
     """Return capturing units line regex.
@@ -59,8 +59,8 @@ class CoordinatesLineFinder(object):
     self.regex = regex
     placeholders = ('@Atom', '@XCoord', '@YCoord', '@ZCoord')
     if not all(placeholder in self.regex for placeholder in placeholders):
-      raise Exception("This regex must contain the following placeholders: "
-                      "@Atom, @XCoord, @YCoord, @ZCoord.")
+      raise ValueError("This regex must contain the following placeholders: "
+                       "@Atom, @XCoord, @YCoord, @ZCoord.")
 
   def get_regex(self):
     """Return non-capturing XYZ line regex.
@@ -106,8 +106,8 @@ class CoordinatesFinder(object):
     self.header = str(header)
     self.footer = str(footer)
     if not isinstance(self.linefinder, CoordinatesLineFinder):
-      raise Exception("The 'linefinder' argument must be an instance of "
-                      "the CoordinatesLineFinder class.")
+      raise ValueError("The 'linefinder' argument must be an instance of "
+                       "the CoordinatesLineFinder class.")
 
   def get_regex(self):
     """Return non-capturing gradient regex.
@@ -128,7 +128,7 @@ class EnergyFinder(object):
   def __init__(self, regex):
     self.regex = regex
     if not '@Energy' in self.regex:
-      raise Exception("This regex must contain the placeholder @Energy.")
+      raise ValueError("This regex must contain the placeholder @Energy.")
 
   def get_energy_regex(self):
     """Return capturing energy regex.
@@ -148,8 +148,8 @@ class GradientLineFinder(object):
     self.regex = regex
     placeholders = ('@XGrad', '@YGrad', '@ZGrad')
     if not all(placeholder in self.regex for placeholder in placeholders):
-      raise Exception("This regex must contain the following placeholders: "
-                      "@XGrad, @YGrad, @ZGrad.")
+      raise ValueError("This regex must contain the following placeholders: "
+                       "@XGrad, @YGrad, @ZGrad.")
 
   def get_regex(self):
     """Return non-capturing gradient line regex.
@@ -177,8 +177,8 @@ class GradientFinder(object):
     self.header = str(header)
     self.footer = str(footer)
     if not isinstance(self.linefinder, GradientLineFinder):
-      raise Exception("The 'linefinder' argument must be an instance of "
-                      "the GradientLineFinder class.")
+      raise ValueError("The 'linefinder' argument must be an instance of "
+                       "the GradientLineFinder class.")
 
   def get_regex(self):
     """Return non-capturing gradient regex.
