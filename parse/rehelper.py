@@ -46,7 +46,7 @@ class UnitsFinder(object):
     return re.sub('@Units', capture(word), self.regex)
 
 
-class CoordinatesLineFinder(object):
+class CoordinateLineFinder(object):
   """Helper for processing coordinate-containing lines in a string.
 
   Attributes:
@@ -91,11 +91,11 @@ class CoordinatesLineFinder(object):
     ret = (float_).join(capture(part) for part in parts)
     return ret
 
-class CoordinatesFinder(object):
+class CoordinateFinder(object):
   """Helper for grabbing the coordinates from a string.
 
   Attributes:
-    linefinder: A CoordinatesLineFinder object.
+    linefinder: A CoordinateLineFinder object.
     head: Text immediately preceding the coordinates.
     foot: Text immediately following the coordinates.
   """
@@ -112,7 +112,7 @@ class CoordinatesFinder(object):
       head: Text immediately preceding the coordinates.
       foot: Text immediately following the coordinates.
     """
-    self.linefinder = CoordinatesLineFinder(regex)
+    self.linefinder = CoordinateLineFinder(regex)
     self.head = str(head)
     self.foot = str(foot)
 
@@ -206,12 +206,15 @@ class GradientFinder(object):
 
 
 if __name__ == "__main__":
-  string = open('output.dat').read()
-  lineregex = r' +\d +@XGrad +@YGrad +@ZGrad *\n'
+  psi_output_string = """
+  -Total Gradient:
+     Atom            X                  Y                   Z
+    ------   -----------------  -----------------  -----------------
+       1        0.000000000000     0.000000000000     0.080750158386
+       2       -0.000000000000     0.036903026214    -0.040375079193
+       3        0.000000000000    -0.036903026214    -0.040375079193
+  """
   head = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
-  foot = ''
-  gradientfinder = GradientFinder(lineregex, head, foot)
-  regex = gradientfinder.get_regex()
-  match = re.search(regex, string)
-  print(match)
-  print(match.group(0))
+  gradfinder = GradientFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n', head)
+  regex = gradfinder.linefinder.get_gradient_regex()
+  print(re.findall(regex, psi_output_string, re.MULTILINE))

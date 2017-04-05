@@ -9,24 +9,24 @@ class CoordinateString(object):
 
   A helper for parsing a coordinate-containing string.  Assumes the coordinates
   are contained in the last block of more than two consecutive lines matching
-  the given rehelper.CoordinatesFinder.
+  the given rehelper.CoordinateFinder.
 
   Attributes:
     string: A string containing a block that matches coordsfinder.get_regex().
-    coordsfinder: An rehelper.CoordinatesFinder object.
+    coordsfinder: An rehelper.CoordinateFinder object.
     unitsfinder: A rehelper.UnitsFinder object.
     _body: The lines in `string` containing the Cartesian coordinates.
     _head: The lines above the body.
     _foot: The lines below the body.
   """
 
-  def __init__(self, string, coordsfinder = rehelper.CoordinatesFinder(),
+  def __init__(self, string, coordsfinder = rehelper.CoordinateFinder(),
                              unitsfinder = rehelper.UnitsFinder()):
     self.string = string
     self.coordsfinder = coordsfinder
-    if not isinstance(self.coordsfinder, rehelper.CoordinatesFinder):
+    if not isinstance(self.coordsfinder, rehelper.CoordinateFinder):
       raise ValueError("The 'coordsfinder' argument must be an instance of the "
-                       "class rehelper.CoordinatesFinder.")
+                       "class rehelper.CoordinateFinder.")
     self.unitsfinder = unitsfinder
     # Split the string into a head, a foot, and a body containing the geometry.
     regex = self.coordsfinder.get_regex()
