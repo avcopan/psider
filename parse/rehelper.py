@@ -95,7 +95,7 @@ class CoordinateFinder(object):
   """Helper for grabbing the coordinates from a string.
 
   Attributes:
-    linefinder: A CoordinateLineFinder object.
+    line_finder: A CoordinateLineFinder object.
     head: Text immediately preceding the coordinates.
     foot: Text immediately following the coordinates.
   """
@@ -112,7 +112,7 @@ class CoordinateFinder(object):
       head: Text immediately preceding the coordinates.
       foot: Text immediately following the coordinates.
     """
-    self.linefinder = CoordinateLineFinder(regex)
+    self.line_finder = CoordinateLineFinder(regex)
     self.head = str(head)
     self.foot = str(foot)
 
@@ -120,7 +120,7 @@ class CoordinateFinder(object):
     """Return non-capturing gradient regex.
     """
     ret = self.head
-    ret += two_or_more(self.linefinder.get_regex())
+    ret += two_or_more(self.line_finder.get_regex())
     ret += self.foot
     return ret
 
@@ -175,7 +175,7 @@ class GradientFinder(object):
   """Helper for grabbing the gradient from a string.
 
   Attributes:
-    linefinder: A GradientLineFinder object.
+    line_finder: A GradientLineFinder object.
     head: Text immediately preceding the gradient lines.
     foot: Text immediately following the gradient lines.
   """
@@ -189,18 +189,18 @@ class GradientFinder(object):
       head: Text immediately preceding the coordinates.
       foot: Text immediately following the coordinates.
     """
-    self.linefinder = GradientLineFinder(regex)
+    self.line_finder = GradientLineFinder(regex)
     self.head = str(head)
     self.foot = str(foot)
-    if not isinstance(self.linefinder, GradientLineFinder):
-      raise ValueError("The 'linefinder' argument must be an instance of "
+    if not isinstance(self.line_finder, GradientLineFinder):
+      raise ValueError("The 'line_finder' argument must be an instance of "
                        "the GradientLineFinder class.")
 
   def get_regex(self):
     """Return non-capturing gradient regex.
     """
     ret = self.head
-    ret += two_or_more(self.linefinder.get_regex())
+    ret += two_or_more(self.line_finder.get_regex())
     ret += self.foot
     return ret
 
@@ -215,6 +215,6 @@ if __name__ == "__main__":
        3        0.000000000000    -0.036903026214    -0.040375079193
   """
   head = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
-  gradfinder = GradientFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n', head)
-  regex = gradfinder.linefinder.get_gradient_regex()
+  grad_finder = GradientFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n', head)
+  regex = grad_finder.line_finder.get_gradient_regex()
   print(re.findall(regex, psi_output_string, re.MULTILINE))

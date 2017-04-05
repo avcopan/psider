@@ -7,7 +7,7 @@ import re
 
 
 def test__energy_finder():
-  psi_output_string = """
+  psi_output_str = """
    => Energetics <=
 
     Nuclear Repulsion Energy =              9.3006650611521877
@@ -19,14 +19,14 @@ def test__energy_finder():
     EFP Energy =                            0.0000000000000000
     Total Energy =                        -74.9610739291330503
   """
-  energyfinder = EnergyFinder(r' *Total Energy *= *@Energy *\n')
-  regex = energyfinder.get_energy_regex()
-  match = re.search(regex, psi_output_string)
+  energy_finder = EnergyFinder(r' *Total Energy *= *@Energy *\n')
+  regex = energy_finder.get_energy_regex()
+  match = re.search(regex, psi_output_str)
   assert(match.group(1) == '-74.9610739291330503')
 
 
 def test__gradient_finder():
-  psi_output_string = """
+  psi_output_str = """
   -Total Gradient:
      Atom            X                  Y                   Z
     ------   -----------------  -----------------  -----------------
@@ -34,32 +34,32 @@ def test__gradient_finder():
        2       -0.000000000000     0.036903026214    -0.040375079193
        3        0.000000000000    -0.036903026214    -0.040375079193
   """
-  gradfinder = GradientFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n')
-  regex = gradfinder.linefinder.get_gradient_regex()
-  assert(re.findall(regex, psi_output_string) ==
+  grad_finder = GradientFinder(r' +\d +@XGrad +@YGrad +@ZGrad *\n')
+  regex = grad_finder.line_finder.get_gradient_regex()
+  assert(re.findall(regex, psi_output_str) ==
     [('0.000000000000',  '0.000000000000',  '0.080750158386'),
      ('-0.000000000000', '0.036903026214', '-0.040375079193'),
      ('0.000000000000', '-0.036903026214', '-0.040375079193')])
 
 
 
-def test__coordinatestring_with_molecule_string():
-  mol_string = """
+def test__coordinate_string_with_molecule_str():
+  mol_str = """
     units angstrom
     O  0.0000000000  0.0000000000 -0.0647162893
     H  0.0000000000 -0.7490459967  0.5135472375
     H  0.0000000000  0.7490459967  0.5135472375
   """
-  coordstring = CoordinateString(mol_string)
-  assert(coordstring.extract_units() == 'angstrom')
-  assert(coordstring.extract_labels() == ('O', 'H', 'H'))
-  assert(np.allclose(coordstring.extract_coordinates(),
+  coord_string = CoordinateString(mol_str)
+  assert(coord_string.extract_units() == 'angstrom')
+  assert(coord_string.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(coord_string.extract_coordinates(),
                     [[ 0.,  0.      , -0.06471629],
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
-def test__coordinatestring_with_psi_input_string():
-  psi_input_string = """
+def test__coordinate_string_with_psi_input_str():
+  psi_input_str = """
     memory 270 mb
 
     molecule {
@@ -71,15 +71,15 @@ def test__coordinatestring_with_psi_input_string():
     set basis sto-3g
     energy('scf')
   """
-  coordstring = CoordinateString(psi_input_string)
-  assert(coordstring.extract_labels() == ('O', 'H', 'H'))
-  assert(np.allclose(coordstring.extract_coordinates(),
+  coord_string = CoordinateString(psi_input_str)
+  assert(coord_string.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(coord_string.extract_coordinates(),
                     [[ 0.,  0.      , -0.06471629],
                      [ 0., -0.749046,  0.51354724],
                      [ 0.,  0.749046,  0.51354724]]))
 
-def test__coordinatestring_with_bagel_input_string():
-  bagel_input_string = """
+def test__coordinate_string_with_bagel_input_str():
+  bagel_input_str = """
   { "bagel" : [
 
     {
@@ -102,16 +102,16 @@ def test__coordinatestring_with_bagel_input_string():
   ]}
   """
   regex = r' *{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *},? *\n'
-  coordsfinder = CoordinateFinder(regex)
-  coordstring = CoordinateString(bagel_input_string, coordsfinder)
-  assert(coordstring.extract_labels() == ('O', 'H', 'H'))
-  assert(np.allclose(coordstring.extract_coordinates(),
+  coord_finder = CoordinateFinder(regex)
+  coord_string = CoordinateString(bagel_input_str, coord_finder)
+  assert(coord_string.extract_labels() == ('O', 'H', 'H'))
+  assert(np.allclose(coord_string.extract_coordinates(),
                     [[ 0.,  0., -0.],
                      [ 0., -0.,  1.],
                      [ 0.,  1.,  1.]]))
 
-def test__coordinatestring_replacement():
-  bagel_input_string = """
+def test__coordinate_string_replacement():
+  bagel_input_str = """
   { "bagel" : [
 
     {
@@ -133,19 +133,19 @@ def test__coordinatestring_replacement():
 
   ]}
   """
-  formattable_string = bagel_input_string.replace('{', '{{').replace('}', '}}')
+  formattable_string = bagel_input_str.replace('{', '{{').replace('}', '}}')
   regex = r' *{{"atom" *: *"@Atom", *"xyz" *: *\[ *@XCoord, *@YCoord, *@ZCoord *\] *}},? *\n'
-  coordsfinder = CoordinateFinder(regex)
-  coordstring = CoordinateString(formattable_string, coordsfinder)
-  bagel_input_template = coordstring.replace_coordinates_with_placeholder('{:.12f}')
-  assert(bagel_input_template != bagel_input_string)
-  coordinates = coordstring.extract_coordinates()
+  coord_finder = CoordinateFinder(regex)
+  coord_string = CoordinateString(formattable_string, coord_finder)
+  bagel_input_template = coord_string.replace_coordinates_with_placeholder('{:.12f}')
+  assert(bagel_input_template != bagel_input_str)
+  coordinates = coord_string.extract_coordinates()
   coords_list = list(coordinates.flatten())
-  assert(bagel_input_template.format(*coords_list) == bagel_input_string)
+  assert(bagel_input_template.format(*coords_list) == bagel_input_str)
 
 
-def test__energystring_with_psi_output_string():
-  psi_output_string = """
+def test__energy_string_with_psi_output_str():
+  psi_output_str = """
    => Energetics <=
 
     Nuclear Repulsion Energy =              9.3006650611521877
@@ -160,15 +160,15 @@ def test__energystring_with_psi_output_string():
 
     Alert: EFP and PCM quantities not currently incorporated into SCF psivars.
   """
-  energyfinder = EnergyFinder(r' *Total Energy *= *@Energy *\n')
-  successregex = r'\*\*\* P[Ss][Ii]4 exiting successfully.'
-  energystring = EnergyString(psi_output_string, energyfinder, successregex)
-  assert(np.isclose(energystring.extract_energy(), -74.9610739291330503))
-  assert(energystring.check_success() == False)
+  energy_finder = EnergyFinder(r' *Total Energy *= *@Energy *\n')
+  success_regex = r'\*\*\* P[Ss][Ii]4 exiting successfully.'
+  energy_string = EnergyString(psi_output_str, energy_finder, success_regex)
+  assert(np.isclose(energy_string.extract_energy(), -74.9610739291330503))
+  assert(energy_string.check_success() == False)
 
 
-def test__gradientstring_with_psi_output_string():
-  psi_output_string = """
+def test__gradient_string_with_psi_output_str():
+  psi_output_str = """
   -Total Gradient:
      Atom            X                  Y                   Z
     ------   -----------------  -----------------  -----------------
@@ -191,9 +191,9 @@ def test__gradientstring_with_psi_output_string():
   regex = r' +\d +@XGrad +@YGrad +@ZGrad *\n'
   head = r'-Total Gradient: *\n +Atom +X +Y +Z *\n.*\n'
   foot = ''
-  gradfinder = GradientFinder(regex, head, foot)
-  gradstring = GradientString(psi_output_string, gradfinder)
-  assert(np.allclose(gradstring.extract_gradient(),
+  grad_finder = GradientFinder(regex, head, foot)
+  grad_string = GradientString(psi_output_str, grad_finder)
+  assert(np.allclose(grad_string.extract_gradient(),
                     [[ 0.,  0.        ,  0.08075016],
                      [-0.,  0.03690303, -0.04037508],
                      [ 0., -0.03690303, -0.04037508]]))
