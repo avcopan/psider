@@ -5,23 +5,37 @@ class TemplateFile(object):
   """A formattable template for a job input file.
 
   Attributes:
-    template: A string with 3*n formatting placeholders, '{:.12f}', where n is
+    string: A string with 3*n formatting placeholders, '{:.12f}', where n is
       an integer.  All other brackets are doubled ('{{' instead of '{') so that
-      we can call 'template.format(*list)' to fill the placeholders with a list
-      of 3*n floats.
+      we can call 'string.format(*list)' to fill the placeholders with a list of
+      3*n floats.
   """
 
-  def __init__(self, template):
-    self.template = template
+  @classmethod
+  def from_coord_string(cls, coord_string, units):
+    string = coord_string.replace_coordinates_with_placeholder('{:12.f}')
+    return cls(string, units)
 
-  def make_input(self, coordinates):
-    """Generate an input file from the template.
+  def __init__(self, string, units):
+    self.string = string
+    self.units = units
+
+  def __str__(self):
+    return self.string.__str__()
+
+  def __repr__(self):
+    return self.string.__repr__()
+
+  def make_input(self, molecule):
+    """Generate an input file from the template string.
 
     Args:
-      coordinates: A numpy array.  The number of elements must correspond to the
-        number of placeholders in `self.template`.
+      molecule: A Molecule object, defining the coordinates to be filled into
+        the job input file.
     """
-    coordslist = list(coordinates.flatten())
-    return self.template.format(*coordslist)
+    molecule = molecule.copy()
+    molecule.set_units(self.units)
+    coord_list = list(molecule.coordinates.flatten())
+    return self.string.format(*coord_list)
 
 

@@ -1,7 +1,6 @@
 *.pyc
 __pycache__
 *.swp
-timer.dat
 .cache
-output.dat
 template.dat
+timer.dat

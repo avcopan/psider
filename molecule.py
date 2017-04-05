@@ -25,10 +25,14 @@ class Molecule(object):
 
   @classmethod
   def from_string(cls, mol_string):
-    coordstring = CoordinateString(mol_string)
-    units = coordstring.extract_units()
-    labels = coordstring.extract_labels()
-    coordinates = coordstring.extract_coordinates()
+    coord_string = CoordinateString(mol_string)
+    units = coord_string.extract_units()
+    return cls.from_coord_string(coord_string, units)
+
+  @classmethod
+  def from_coord_string(cls, coord_string, units):
+    labels = coord_string.extract_labels()
+    coordinates = coord_string.extract_coordinates()
     return cls(labels, coordinates, units)
 
   def __init__(self, labels, coordinates, units = "angstrom"):
@@ -63,6 +67,9 @@ class Molecule(object):
 
   def __repr__(self):
     return str(self)
+
+  def copy(self):
+    return Molecule(self.labels, self.coordinates.copy(), units)
 
   def set_coordinates(self, coordinates, units = None):
     if units is None: units = self.units
