@@ -1,6 +1,10 @@
 """Module for general user-specified options.
 """
+import os
 from psi4 import core
+from .template import TemplateFile
+from .molecule import Molecule
+from .parse import CoordinateFinder, EnergyFinder, GradientFinder
 
 class Options(object):
   """Store job-control options and pass additional options on to Psi4.
@@ -13,6 +17,7 @@ class Options(object):
                coord_regex = r" *@Atom +@XCoord +@YCoord +@ZCoord *\n",
                energy_regex = r"",
                success_regex = r"",
+               job_dir = ".",
                input_name = "input.dat",
                output_name = "output.dat",
                submitter = lambda kwargs: None,
@@ -47,6 +52,9 @@ class Options(object):
         to be in standard floating-point format, and end in a newline.
       success_regex: A regex that will match the output only if the job ran
         successfully.
+      job_dir: The name of the job directory.  For finite-difference
+        computations, the jobs for each displaced geometry will be placed in
+        sub-directories named according to `disp_dir`.
       input_name: The name of the job input file.
       output_name: The name of the job output file.
       submitter: A user-defined job submission function.  This function must
@@ -96,24 +104,8 @@ class Options(object):
         keywords, use the submodule name as key and pass a dictionary with the
         submodule keys/values as its value.
     """
-    # Required keywords:
-    self.template_file_path   = template_file_path
-    self.coord_units          = coord_units
-    self.coord_regex          = coord_regex
-    self.energy_regex         = energy_regex
-    self.success_regex        = success_regex
-    self.input_name           = input_name
-    self.output_name          = output_name
-    self.submitter            = submitter
-    self.submitter_kwargs     = submitter_kwargs
-    # Optional keywords:
-    self.disp_dir             = disp_dir
-    self.batch_submission     = batch_submission
-    self.correction_regexes   = correction_regexes
-    self.files_to_copy        = files_to_copy
-    self.gradient_finder      = gradient_finder
-    self.gradient_output_name = gradient_output_name
-    self.psi4kwargs           = psi4kwargs
+    template_file_str = open(template_file_path).read()
+    print(template_file_str)
 
 
 def set_psi4_options(**kwargs):
@@ -144,3 +136,8 @@ def set_psi4_options(**kwargs):
       raise ValueError("Unrecognized keyword {:s}".format(str(key)))
 
 
+if __name__ == "__main__":
+  options = Options(
+    template_file_path = "template.dat"
+  )
+  
