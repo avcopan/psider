@@ -93,6 +93,7 @@ class EnergyRoutine(object):
         self.submitter = Submitter(submit_function, job_dir_path)
         self.energy_finder = energy_finder
         self.success_pattern = success_pattern
+        self.energy = None
         if not isinstance(energy_finder, parse.EnergyFinder):
             raise ValueError("'energy_finder' must be an instance of the "
                              "parse.EnergyFinder class.")
@@ -109,15 +110,28 @@ class EnergyRoutine(object):
                                            self.success_pattern)
         if not energy_string.was_successful():
             raise RuntimeError("Success pattern not found in output.")
-        energy = energy_string.extract_energy()
-        return energy
+        self.energy = energy_string.extract_energy()
+
+    def execute(self, reap_only=False):
+        if not reap_only:
+            self.sow()
+            self.run()
+        self.reap()
+
+    def get_energy(self):
+        return self.energy
 
 
 if __name__ == "__main__":
+    import py
+    import numpy as np
+    tmpdir = py.path.local.mkdtemp()
+
     import subprocess as sp
-    import tempfile
-    from .molecule import Molecule
-    from .template import InputTemplate
+    from psider.molecule import Molecule
+    from psider.template import InputTemplate
+    from psider.parse import CoordinateString, EnergyFinder
+
     psi_input_str = """
 memory 270 mb
 
@@ -131,25 +145,20 @@ set basis sto-3g
 energy('mp2')
     """
     psi_input_format_str = psi_input_str.replace('{', '{{').replace('}', '}}')
-    coord_string = parse.CoordinateString(psi_input_format_str)
-    molecule = Molecule.from_coord_string(coord_string, 'angstrom')
-    input_template = InputTemplate.from_coord_string(coord_string, 'angstrom')
-    energy_finder = parse.EnergyFinder([
-        r"Reference Energy += +@Energy",
-        r"Correlation Energy += +@Energy"
-    ])
-    success_pattern = r'\*\*\* P[Ss][Ii]4 exiting successfully.'
-    def submit():
-        sp.call(["psi4"])
-    energy_routine = EnergyRoutine(
-        molecule = molecule,
-        input_template = input_template,
-        energy_finder = energy_finder,
-        success_pattern = success_pattern,
-        submit_function = submit,
-        job_dir_path = tempfile.gettempdir()
-    )
-    energy_routine.sow()
-    energy_routine.run()
-    energy = energy_routine.reap()
-    print(energy)
+    input_coord_string = CoordinateString(psi_input_format_str)
+    molecule = Molecule.from_coord_string(input_coord_string, 'angstrom')
+    input_template = InputTemplate.from_coord_string(input_coord_string,
+                                                     'angstrom')
+    energy_finder = EnergyFinder([r"\n[ \t]+Reference Energy += +@Energy",
+                                  r"\n[ \t]+Correlation Energy += +@Energy"])
+    success_pattern = r"\*\*\* P[Ss][Ii]4 exiting successfully."
+    energy_routine = EnergyRoutine(molecule, input_template, energy_finder,
+                                   success_pattern,
+                                   submit_function=lambda: sp.call(["psi4"]),
+                                   input_name="input.dat",
+                                   output_name="output.dat",
+                                   job_dir_path=tmpdir.dirname,
+                                   job_file_paths=None)
+    energy_routine.execute()
+    assert(np.isclose(energy_routine.energy, -74.9956618520565144))
+    print(energy_routine.energy)

@@ -24,7 +24,7 @@ def get_last_match(pattern, string, flags=0):
     for match in re.finditer(pattern, string, flags):
         pass
     if not match:
-        raise ValueError("No match found in string.")
+        raise ValueError("No match for {:s} found in string.".format(pattern))
     return match
 
 
